@@ -1,0 +1,998 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Остров Кэма</title>
+<style>
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-14px); }
+  }
+
+  :root {
+    --bg: #eef3ef;
+    --bg-alt: #e1eae2;
+    --surface: #f8fbf8;
+    --text: #16211f;
+    --text-muted: #52655d;
+    --accent: #146b5c;
+    --accent-bright: #1e9683;
+    --accent-contrast: #f8fbf8;
+    --gold: #a8823c;
+    --border: rgba(22, 33, 31, 0.14);
+    --hero-1: #e9d3a8;
+    --hero-2: #123b36;
+    --shadow: 0 18px 40px -22px rgba(15, 30, 27, 0.35);
+
+    --font-display: Georgia, "PT Serif", "Times New Roman", serif;
+    --font-body: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --sp-1: 0.5rem;
+    --sp-2: 1rem;
+    --sp-3: 1.5rem;
+    --sp-4: 2rem;
+    --sp-5: 3rem;
+    --sp-6: 4.5rem;
+    --sp-7: 6rem;
+
+    --header-space: 6.6rem;
+    --dots-space: 5.2rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1614;
+      --bg-alt: #11201d;
+      --surface: #172924;
+      --text: #e7efea;
+      --text-muted: #97aaa2;
+      --accent: #2fb39c;
+      --accent-bright: #59d6be;
+      --accent-contrast: #0b1614;
+      --gold: #c79a52;
+      --border: rgba(231, 239, 234, 0.16);
+      --hero-1: #2a2116;
+      --hero-2: #07231f;
+      --shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1614;
+    --bg-alt: #11201d;
+    --surface: #172924;
+    --text: #e7efea;
+    --text-muted: #97aaa2;
+    --accent: #2fb39c;
+    --accent-bright: #59d6be;
+    --accent-contrast: #0b1614;
+    --gold: #c79a52;
+    --border: rgba(231, 239, 234, 0.16);
+    --hero-1: #2a2116;
+    --hero-2: #07231f;
+    --shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  img, svg { display: block; max-width: 100%; }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4);
+  }
+
+  a { color: inherit; }
+
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 var(--sp-2);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--text);
+  }
+
+  h2 { font-size: clamp(1.6rem, 1.1rem + 2vw, 2.3rem); letter-spacing: -0.01em; }
+  h3 { font-size: 1.25rem; }
+
+  p { margin: 0; color: var(--text-muted); max-width: 62ch; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+
+  .btn-primary { background: var(--accent); color: var(--accent-contrast); box-shadow: var(--shadow); }
+  .btn-primary:hover { background: var(--accent-bright); }
+
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-on-dark { background: rgba(248, 251, 248, 0.12); color: #f8fbf8; border-color: rgba(248, 251, 248, 0.35); backdrop-filter: blur(6px); }
+  .btn-on-dark:hover { background: rgba(248, 251, 248, 0.22); }
+
+  /* ---------- Header (persistent app bar over the carousel) ---------- */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: var(--sp-2) 0;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 0 var(--border);
+  }
+  header .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+  }
+
+  .brand { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; cursor: pointer; }
+  .brand-mark { width: 36px; height: 36px; flex: none; }
+  .brand-text { line-height: 1.15; }
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 1.02rem;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    display: block;
+  }
+  .brand-sub {
+    display: block;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  nav.main-nav { display: flex; align-items: center; gap: var(--sp-4); }
+  .nav-links { display: flex; gap: var(--sp-3); list-style: none; margin: 0; padding: 0; }
+  .nav-links a {
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+    opacity: 0.82;
+    padding: 0.3rem 0.1rem;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+  .nav-links a:hover, .nav-links a.is-current { opacity: 1; border-color: var(--accent); }
+
+  .lang-switch { display: flex; gap: 0.25rem; border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+  .lang-switch button {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .lang-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-contrast); }
+
+  .nav-toggle { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.6rem; cursor: pointer; }
+  .nav-toggle span, .nav-toggle span::before, .nav-toggle span::after {
+    display: block; width: 18px; height: 2px; background: var(--text); position: relative;
+  }
+  .nav-toggle span::before, .nav-toggle span::after { content: ""; position: absolute; left: 0; }
+  .nav-toggle span::before { top: -6px; }
+  .nav-toggle span::after { top: 6px; }
+
+  /* ---------- Carousel shell ---------- */
+  .carousel { position: fixed; inset: 0; overflow: hidden; }
+  .track { display: flex; height: 100%; transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1); will-change: transform; }
+  .slide {
+    flex: 0 0 100vw;
+    width: 100vw;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: var(--header-space);
+    padding-bottom: var(--dots-space);
+  }
+  .slide.tone-alt { background: var(--bg-alt); }
+
+  .reveal { opacity: 0; }
+  .reveal.in-view { animation: rise 0.6s ease both; }
+
+  /* ---------- Hero slide ---------- */
+  .slide-hero {
+    position: relative;
+    background: linear-gradient(165deg, var(--hero-1) 0%, var(--hero-2) 75%);
+    color: #f8fbf8;
+    display: flex;
+    align-items: center;
+  }
+  .slide-hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(60% 50% at 18% 12%, rgba(255,255,255,0.16), transparent 60%);
+    pointer-events: none;
+  }
+  .slide-hero .wrap { position: relative; z-index: 2; width: 100%; }
+  .hero-inner { max-width: 44rem; }
+  .slide-hero .eyebrow { color: #f3e3c4; }
+  .slide-hero h1 {
+    color: #f8fbf8;
+    font-size: clamp(2rem, 1.2rem + 3vw, 3.4rem);
+    line-height: 1.1;
+    margin-bottom: var(--sp-4);
+  }
+  .hero-ctas { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-5); }
+
+  .trust-strip { display: flex; flex-wrap: wrap; gap: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid rgba(248,251,248,0.22); }
+  .trust-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: rgba(248,251,248,0.82); }
+  .trust-item svg { width: 18px; height: 18px; flex: none; }
+
+  .ripples { position: absolute; right: -6%; bottom: -10%; width: 42%; min-width: 300px; opacity: 0.5; animation: drift 9s ease-in-out infinite; }
+
+  /* ---------- Sections inside slides ---------- */
+  .section-head { max-width: 40rem; margin: 0 auto var(--sp-4); text-align: center; }
+  .section-head p { margin: 0 auto; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: var(--sp-3);
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .feature-card .icon { width: 36px; height: 36px; color: var(--accent); }
+  .feature-card p { max-width: none; font-size: 0.92rem; }
+
+  .fishing-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--sp-5); align-items: start; }
+  .price-cards { display: grid; gap: var(--sp-2); }
+  .price-card {
+    display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .price-card .label { font-weight: 600; font-size: 0.96rem; }
+  .price-card .value { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; font-size: 1.02rem; white-space: nowrap; }
+  .price-note { font-size: 0.8rem; margin-top: var(--sp-2); color: var(--text-muted); font-style: italic; }
+
+  .rule-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+  .rule-list li { display: flex; gap: 0.7rem; align-items: flex-start; font-size: 0.94rem; color: var(--text); }
+  .rule-list svg { width: 19px; height: 19px; flex: none; color: var(--accent); margin-top: 0.1rem; }
+
+  .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+  .menu-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: var(--sp-3); }
+  .menu-card h3 { color: var(--gold); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-body); font-weight: 700; margin-bottom: var(--sp-2); }
+  .menu-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+  .menu-card li { border-bottom: 1px dashed var(--border); padding-bottom: 0.55rem; font-size: 0.93rem; }
+  .menu-card li:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .events-panel {
+    background: linear-gradient(135deg, var(--hero-2), var(--accent));
+    color: #f8fbf8;
+    border-radius: 24px;
+    padding: var(--sp-5) var(--sp-4);
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--sp-4);
+    align-items: center;
+  }
+  .events-panel .eyebrow { color: var(--gold); }
+  .events-panel h2 { color: #f8fbf8; }
+  .events-panel p { color: rgba(248,251,248,0.86); max-width: 46ch; }
+  .events-cta { display: flex; justify-content: flex-end; }
+
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); align-items: start; }
+  .contact-list { display: grid; gap: var(--sp-2); }
+  .contact-row { display: flex; gap: var(--sp-3); border-bottom: 1px solid var(--border); padding-bottom: var(--sp-2); }
+  .contact-row svg { width: 21px; height: 21px; color: var(--accent); flex: none; margin-top: 0.15rem; }
+  .contact-row .label { font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.2rem; }
+  .contact-row .value { font-weight: 600; }
+  .contact-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+  .map-frame {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 4 / 3;
+    background:
+      radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 55%),
+      repeating-linear-gradient(45deg, var(--surface) 0 18px, var(--bg-alt) 18px 36px);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: var(--sp-4);
+    color: var(--text-muted); font-size: 0.85rem;
+  }
+
+  .embedded-footer { background: var(--hero-2); color: rgba(248,251,248,0.78); padding: var(--sp-4) 0; margin-top: var(--sp-5); }
+  .embedded-footer .footer-bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2); font-size: 0.78rem; }
+  .embedded-footer a { text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ---------- Banner ---------- */
+  .draft-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 101;
+    background: var(--gold);
+    color: #201705;
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 0.4rem var(--sp-3);
+  }
+  .draft-banner ~ header { top: 1.9rem; }
+  .draft-banner ~ .carousel { top: 1.9rem; }
+  .draft-banner ~ .fab { bottom: calc(var(--sp-3)); }
+
+  /* ---------- Carousel controls ---------- */
+  .car-arrow {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    z-index: 95; width: 44px; height: 44px; border-radius: 999px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(6px);
+    color: var(--text);
+    font-size: 1.4rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: opacity 0.2s ease, transform 0.15s ease;
+    box-shadow: var(--shadow);
+  }
+  .car-arrow:hover { transform: translateY(-50%) scale(1.06); }
+  .car-arrow.prev { left: var(--sp-3); }
+  .car-arrow.next { right: var(--sp-3); }
+  .car-arrow[disabled] { opacity: 0.25; pointer-events: none; }
+
+  .car-dots {
+    position: fixed; left: 50%; bottom: var(--sp-3); transform: translateX(-50%);
+    z-index: 95; display: flex; gap: 0.55rem;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(6px);
+    padding: 0.5rem 0.7rem; border-radius: 999px; border: 1px solid var(--border);
+  }
+  .car-dots button {
+    width: 8px; height: 8px; border-radius: 999px; border: none;
+    background: var(--border); cursor: pointer; padding: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .car-dots button.active { background: var(--accent); transform: scale(1.3); }
+
+  .car-counter {
+    position: fixed; top: var(--sp-2); right: var(--sp-3); z-index: 95;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+    color: var(--text-muted); font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(6px); padding: 0.3rem 0.6rem; border-radius: 999px; border: 1px solid var(--border);
+    margin-top: 3.1rem;
+  }
+
+  /* ---------- WhatsApp FAB ---------- */
+  .fab {
+    position: fixed; right: var(--sp-3); bottom: calc(var(--sp-3) + 3.2rem); z-index: 96;
+    display: flex; align-items: center; gap: 0.55rem;
+    background: var(--accent); color: var(--accent-contrast);
+    border-radius: 999px; padding: 0.75rem 1.05rem; text-decoration: none;
+    box-shadow: var(--shadow); font-weight: 700; font-size: 0.85rem;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .fab:hover { background: var(--accent-bright); transform: translateY(-2px); }
+  .fab svg { width: 20px; height: 20px; }
+
+  @media (max-width: 900px) {
+    .fishing-layout { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .menu-grid { grid-template-columns: 1fr; }
+    .contact-grid { grid-template-columns: 1fr; }
+    .events-panel { grid-template-columns: 1fr; text-align: left; }
+    .events-cta { justify-content: flex-start; }
+    .car-arrow { width: 38px; height: 38px; font-size: 1.2rem; }
+  }
+
+  @media (max-width: 760px) {
+    .nav-links, .lang-switch.desktop { display: none; }
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    nav.main-nav { gap: var(--sp-2); }
+    .mobile-panel {
+      position: fixed; inset: 0; z-index: 110;
+      background: var(--bg); padding: calc(var(--sp-6)) var(--sp-4) var(--sp-4);
+      display: none; flex-direction: column; gap: var(--sp-4);
+    }
+    .mobile-panel.open { display: flex; }
+    .mobile-panel .nav-links { display: flex; flex-direction: column; gap: var(--sp-3); }
+    .mobile-panel .nav-links a { font-size: 1.15rem; }
+    .mobile-close { align-self: flex-end; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; cursor: pointer; font-size: 1rem; }
+    .card-grid { grid-template-columns: 1fr; }
+    .car-arrow.prev { left: 0.5rem; }
+    .car-arrow.next { right: 0.5rem; }
+  }
+</style>
+
+<div class="draft-banner" data-i18n="banner.text">Черновой прототип: фото, цены и адрес — демонстрационные, заменим на ваши материалы перед запуском.</div>
+
+<header id="siteHeader">
+  <div class="wrap">
+    <a class="brand" data-slide="hero">
+      <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="24" cy="24" r="23" stroke="var(--accent)" stroke-width="1.4"/>
+        <path d="M10 27c5-7 10-7 14-3s9 4 14-3" stroke="var(--accent)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path d="M17 20c3-4 6-4 9-1.5S33 21 37 17" stroke="var(--gold)" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.8"/>
+      </svg>
+      <span class="brand-text">
+        <span class="brand-name">ОСТРОВ КЭМА</span>
+        <span class="brand-sub" data-i18n="brand.sub">Форелевое хозяйство · Тараз</span>
+      </span>
+    </a>
+    <nav class="main-nav">
+      <ul class="nav-links">
+        <li><a data-slide="about" data-i18n="nav.about">О месте</a></li>
+        <li><a data-slide="fishing" data-i18n="nav.fishing">Рыбалка</a></li>
+        <li><a data-slide="bar" data-i18n="nav.bar">Бар</a></li>
+        <li><a data-slide="events" data-i18n="nav.events">Мероприятия</a></li>
+        <li><a data-slide="contact" data-i18n="nav.contact">Контакты</a></li>
+      </ul>
+      <div class="lang-switch desktop" role="group" aria-label="Язык / Тіл / Language">
+        <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+        <button type="button" data-lang="kk" aria-pressed="false">ҚАЗ</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Меню" aria-expanded="false"><span></span></button>
+    </nav>
+  </div>
+  <div class="mobile-panel" id="mobilePanel">
+    <button class="mobile-close" id="mobileClose">✕</button>
+    <ul class="nav-links">
+      <li><a data-slide="about" data-i18n="nav.about">О месте</a></li>
+      <li><a data-slide="fishing" data-i18n="nav.fishing">Рыбалка</a></li>
+      <li><a data-slide="bar" data-i18n="nav.bar">Бар</a></li>
+      <li><a data-slide="events" data-i18n="nav.events">Мероприятия</a></li>
+      <li><a data-slide="contact" data-i18n="nav.contact">Контакты</a></li>
+    </ul>
+    <div class="lang-switch" role="group" aria-label="Язык / Тіл / Language">
+      <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+      <button type="button" data-lang="kk" aria-pressed="false">ҚАЗ</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="carousel" id="carousel">
+  <div class="track" id="track">
+
+    <section class="slide slide-hero" data-slide-id="hero">
+      <svg class="ripples" viewBox="0 0 300 300" fill="none" aria-hidden="true">
+        <circle cx="150" cy="150" r="40" stroke="#f8fbf8" stroke-opacity="0.25" stroke-width="1.5"/>
+        <circle cx="150" cy="150" r="80" stroke="#f8fbf8" stroke-opacity="0.18" stroke-width="1.5"/>
+        <circle cx="150" cy="150" r="120" stroke="#f8fbf8" stroke-opacity="0.12" stroke-width="1.5"/>
+      </svg>
+      <div class="wrap">
+        <div class="hero-inner">
+          <span class="eyebrow" data-i18n="hero.eyebrow">Форелевое хозяйство · Тараз</span>
+          <h1 data-i18n="hero.h1">Остров, где ловят форель и забывают о городе</h1>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="https://wa.me/7768880730" target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20l1.3-4.6A8 8 0 1 1 9 18.6L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 9.7c.3 2.6 2.3 4.6 4.9 4.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span data-i18n="hero.cta1">Написать в WhatsApp</span>
+            </a>
+            <a class="btn btn-on-dark" data-slide="bar">
+              <span data-i18n="hero.cta2">Смотреть меню бара</span>
+            </a>
+          </div>
+          <div class="trust-strip">
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12c3-5 13-5 16 0-3 5-13 5-16 0Z" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+              <span data-i18n="trust.followers">41 000+ подписчиков в Instagram</span>
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v18M6 8h12M7 15h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span data-i18n="trust.noalcohol">Безалкогольное заведение</span>
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="2.4" stroke="currentColor" stroke-width="1.4"/><circle cx="17" cy="9" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M4 19c1-3.5 3.3-5 5-5s4 1.5 5 5M14 19c.6-2.2 2-4 4-4.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span data-i18n="trust.family">Открыто для всей семьи</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide-id="about">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow" data-i18n="about.eyebrow">Территория</span>
+          <h2 data-i18n="about.h2">Четыре причины провести день на острове</h2>
+        </div>
+        <div class="card-grid">
+          <div class="feature-card reveal">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M4 12c3-5 13-5 16 0-3 5-13 5-16 0Z" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+            <h3 data-i18n="about.card1.title">Форелевое озеро</h3>
+            <p data-i18n="about.card1.desc">Чистая вода, живая форель и снасти на прокат — рыбачьте хоть с утра до вечера.</p>
+          </div>
+          <div class="feature-card reveal">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M4 21V10l8-6 8 6v11" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 21v-6h6v6" stroke="currentColor" stroke-width="1.4"/></svg>
+            <h3 data-i18n="about.card2.title">Кабинки у воды</h3>
+            <p data-i18n="about.card2.desc">Отдельные беседки для семьи, компании или свидания — со своим столом и видом на озеро.</p>
+          </div>
+          <div class="feature-card reveal">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M6 3v9a4 4 0 0 0 8 0V3" stroke="currentColor" stroke-width="1.4"/><path d="M6 7h8M10 16v5M7 21h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <h3 data-i18n="about.card3.title">Бар без алкоголя</h3>
+            <p data-i18n="about.card3.desc">Домашние лимонады, чай на травах и лёгкая кухня — отдых, после которого за руль садиться спокойно.</p>
+          </div>
+          <div class="feature-card reveal">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="2.4" stroke="currentColor" stroke-width="1.4"/><circle cx="17" cy="9" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M4 19c1-3.5 3.3-5 5-5s4 1.5 5 5M14 19c.6-2.2 2-4 4-4.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <h3 data-i18n="about.card4.title">Семейный формат</h3>
+            <p data-i18n="about.card4.desc">Тихая территория без шума ночных заведений — детям и родителям здесь одинаково хорошо.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide tone-alt" data-slide-id="fishing">
+      <div class="wrap">
+        <div class="fishing-layout">
+          <div>
+            <span class="eyebrow reveal" data-i18n="fishing.eyebrow">Рыбалка</span>
+            <h2 class="reveal" data-i18n="fishing.h2" style="margin-bottom: var(--sp-2);">Своя форель, честные правила</h2>
+            <p class="reveal" data-i18n="fishing.intro" style="margin-bottom: var(--sp-4);">Платите за вход и за улов — снасти дадим на месте. Ниже — ориентировочные условия, уточним при бронировании.</p>
+            <ul class="rule-list reveal">
+              <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="fishing.rule1">Свои снасти приносить можно</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="fishing.rule2">Улов взвешивается и оплачивается по факту</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="fishing.rule3">Работаем ежедневно, часы уточняются</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="fishing.rule4">Группам и мероприятиям — отдельные условия</span></li>
+            </ul>
+          </div>
+          <div class="reveal">
+            <div class="price-cards">
+              <div class="price-card">
+                <span class="label" data-i18n="fishing.price1.label">Вход на озеро</span>
+                <span class="value" data-i18n="fishing.price1.value">от 2 000 ₸</span>
+              </div>
+              <div class="price-card">
+                <span class="label" data-i18n="fishing.price2.label">Аренда удочки</span>
+                <span class="value" data-i18n="fishing.price2.value">от 1 000 ₸</span>
+              </div>
+              <div class="price-card">
+                <span class="label" data-i18n="fishing.price3.label">Форель, цена за кг</span>
+                <span class="value" data-i18n="fishing.price3.value">уточняется</span>
+              </div>
+            </div>
+            <p class="price-note" data-i18n="fishing.note">* Точные цены появятся здесь после согласования — сейчас это демонстрационные цифры для макета.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide-id="bar">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow" data-i18n="bar.eyebrow">Бар и меню</span>
+          <h2 data-i18n="bar.h2">Без алкоголя, но не без удовольствия</h2>
+        </div>
+        <div class="menu-grid">
+          <div class="menu-card reveal">
+            <h3 data-i18n="bar.cat1.title">Напитки</h3>
+            <ul>
+              <li><span data-i18n="bar.cat1.item1">Домашний лимонад</span></li>
+              <li><span data-i18n="bar.cat1.item2">Морс из ягод</span></li>
+              <li><span data-i18n="bar.cat1.item3">Чай на травах</span></li>
+            </ul>
+          </div>
+          <div class="menu-card reveal">
+            <h3 data-i18n="bar.cat2.title">Кухня</h3>
+            <ul>
+              <li><span data-i18n="bar.cat2.item1">Форель на гриле</span></li>
+              <li><span data-i18n="bar.cat2.item2">Овощи на углях</span></li>
+              <li><span data-i18n="bar.cat2.item3">Плов</span></li>
+            </ul>
+          </div>
+          <div class="menu-card reveal">
+            <h3 data-i18n="bar.cat3.title">Десерты</h3>
+            <ul>
+              <li><span data-i18n="bar.cat3.item1">Медовик</span></li>
+              <li><span data-i18n="bar.cat3.item2">Фруктовая тарелка</span></li>
+            </ul>
+          </div>
+        </div>
+        <p class="price-note reveal" style="text-align:center; margin-top: var(--sp-3);" data-i18n="bar.note">Меню демонстрационное — заменим на ваши позиции и цены.</p>
+      </div>
+    </section>
+
+    <section class="slide tone-alt" data-slide-id="events">
+      <div class="wrap">
+        <div class="events-panel reveal">
+          <div>
+            <span class="eyebrow" data-i18n="events.eyebrow">Мероприятия</span>
+            <h2 data-i18n="events.h2">День рождения, корпоратив или семейный сбор</h2>
+            <p data-i18n="events.text" style="margin-top: var(--sp-2);">Беседки у озера подходят для праздников на 10–30 человек. Поможем с рассадкой, меню и украшением — расскажите о дате, и мы подберём вариант.</p>
+          </div>
+          <div class="events-cta">
+            <a class="btn btn-on-dark" href="https://wa.me/7768880730" target="_blank" rel="noopener">
+              <span data-i18n="events.cta">Обсудить мероприятие в WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide-id="contact">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow" data-i18n="contact.eyebrow">Контакты</span>
+          <h2 data-i18n="contact.h2">Как до нас добраться</h2>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-list reveal">
+            <div class="contact-row">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.4"/></svg>
+              <div>
+                <div class="label" data-i18n="contact.addr.label">Адрес</div>
+                <div class="value" data-i18n="contact.addr.value">Тараз, уточняется — добавим точный адрес</div>
+              </div>
+            </div>
+            <div class="contact-row">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.4"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <div>
+                <div class="label" data-i18n="contact.hours.label">Режим работы</div>
+                <div class="value" data-i18n="contact.hours.value">Ежедневно, уточняется</div>
+              </div>
+            </div>
+            <div class="contact-row">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 20l1.3-4.6A8 8 0 1 1 9 18.6L4 20Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              <div>
+                <div class="label" data-i18n="contact.phone.label">WhatsApp / телефон</div>
+                <div class="value">+7 776 888 07 30</div>
+              </div>
+            </div>
+            <div class="contact-actions">
+              <a class="btn btn-primary" href="https://wa.me/7768880730" target="_blank" rel="noopener" data-i18n="hero.cta1">Написать в WhatsApp</a>
+              <a class="btn btn-ghost" href="https://2gis.kz" target="_blank" rel="noopener" data-i18n="contact.map.btn">Открыть в 2GIS</a>
+              <a class="btn btn-ghost" href="https://www.instagram.com/ostrovkema/" target="_blank" rel="noopener" data-i18n="contact.instagram.btn">@ostrovkema</a>
+            </div>
+          </div>
+          <div class="map-frame reveal" data-i18n="contact.map.placeholder">Здесь появится карта проезда (2GIS / Google Maps) после подключения точного адреса</div>
+        </div>
+      </div>
+      <div class="embedded-footer">
+        <div class="wrap footer-bottom">
+          <span data-i18n="footer.text">© 2026 Остров Кэма — форелевое хозяйство в Таразе. Черновой макет сайта.</span>
+          <span><a href="https://www.instagram.com/ostrovkema/" target="_blank" rel="noopener">Instagram @ostrovkema</a></span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <button type="button" class="car-arrow prev" id="prevBtn" aria-label="Previous slide">‹</button>
+  <button type="button" class="car-arrow next" id="nextBtn" aria-label="Next slide">›</button>
+  <div class="car-dots" id="carDots"></div>
+  <div class="car-counter" id="carCounter">1 / 6</div>
+</div>
+
+<a class="fab" href="https://wa.me/7768880730" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20l1.3-4.6A8 8 0 1 1 9 18.6L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 9.7c.3 2.6 2.3 4.6 4.9 4.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  <span>WhatsApp</span>
+</a>
+
+<script>
+(function () {
+  var translations = {
+    ru: {
+      "brand.sub": "Форелевое хозяйство · Тараз",
+      "nav.about": "О месте", "nav.fishing": "Рыбалка", "nav.bar": "Бар", "nav.events": "Мероприятия", "nav.contact": "Контакты",
+      "banner.text": "Черновой прототип: фото, цены и адрес — демонстрационные, заменим на ваши материалы перед запуском.",
+      "hero.eyebrow": "Форелевое хозяйство · Тараз",
+      "hero.h1": "Остров, где ловят форель и забывают о городе",
+      "hero.cta1": "Написать в WhatsApp",
+      "hero.cta2": "Смотреть меню бара",
+      "trust.followers": "41 000+ подписчиков в Instagram",
+      "trust.noalcohol": "Безалкогольное заведение",
+      "trust.family": "Открыто для всей семьи",
+      "about.eyebrow": "Территория",
+      "about.h2": "Четыре причины провести день на острове",
+      "about.card1.title": "Форелевое озеро",
+      "about.card1.desc": "Чистая вода, живая форель и снасти на прокат — рыбачьте хоть с утра до вечера.",
+      "about.card2.title": "Кабинки у воды",
+      "about.card2.desc": "Отдельные беседки для семьи, компании или свидания — со своим столом и видом на озеро.",
+      "about.card3.title": "Бар без алкоголя",
+      "about.card3.desc": "Домашние лимонады, чай на травах и лёгкая кухня — отдых, после которого за руль садиться спокойно.",
+      "about.card4.title": "Семейный формат",
+      "about.card4.desc": "Тихая территория без шума ночных заведений — детям и родителям здесь одинаково хорошо.",
+      "fishing.eyebrow": "Рыбалка",
+      "fishing.h2": "Своя форель, честные правила",
+      "fishing.intro": "Платите за вход и за улов — снасти дадим на месте. Ниже — ориентировочные условия, уточним при бронировании.",
+      "fishing.rule1": "Свои снасти приносить можно",
+      "fishing.rule2": "Улов взвешивается и оплачивается по факту",
+      "fishing.rule3": "Работаем ежедневно, часы уточняются",
+      "fishing.rule4": "Группам и мероприятиям — отдельные условия",
+      "fishing.price1.label": "Вход на озеро", "fishing.price1.value": "от 2 000 ₸",
+      "fishing.price2.label": "Аренда удочки", "fishing.price2.value": "от 1 000 ₸",
+      "fishing.price3.label": "Форель, цена за кг", "fishing.price3.value": "уточняется",
+      "fishing.note": "* Точные цены появятся здесь после согласования — сейчас это демонстрационные цифры для макета.",
+      "bar.eyebrow": "Бар и меню",
+      "bar.h2": "Без алкоголя, но не без удовольствия",
+      "bar.cat1.title": "Напитки", "bar.cat1.item1": "Домашний лимонад", "bar.cat1.item2": "Морс из ягод", "bar.cat1.item3": "Чай на травах",
+      "bar.cat2.title": "Кухня", "bar.cat2.item1": "Форель на гриле", "bar.cat2.item2": "Овощи на углях", "bar.cat2.item3": "Плов",
+      "bar.cat3.title": "Десерты", "bar.cat3.item1": "Медовик", "bar.cat3.item2": "Фруктовая тарелка",
+      "bar.note": "Меню демонстрационное — заменим на ваши позиции и цены.",
+      "events.eyebrow": "Мероприятия",
+      "events.h2": "День рождения, корпоратив или семейный сбор",
+      "events.text": "Беседки у озера подходят для праздников на 10–30 человек. Поможем с рассадкой, меню и украшением — расскажите о дате, и мы подберём вариант.",
+      "events.cta": "Обсудить мероприятие в WhatsApp",
+      "contact.eyebrow": "Контакты",
+      "contact.h2": "Как до нас добраться",
+      "contact.addr.label": "Адрес", "contact.addr.value": "Тараз, уточняется — добавим точный адрес",
+      "contact.hours.label": "Режим работы", "contact.hours.value": "Ежедневно, уточняется",
+      "contact.phone.label": "WhatsApp / телефон",
+      "contact.map.btn": "Открыть в 2GIS", "contact.instagram.btn": "@ostrovkema",
+      "contact.map.placeholder": "Здесь появится карта проезда (2GIS / Google Maps) после подключения точного адреса",
+      "footer.text": "© 2026 Остров Кэма — форелевое хозяйство в Таразе. Черновой макет сайта."
+    },
+    kk: {
+      "brand.sub": "Форель шаруашылығы · Тараз",
+      "nav.about": "Орын туралы", "nav.fishing": "Балық аулау", "nav.bar": "Бар", "nav.events": "Іс-шаралар", "nav.contact": "Байланыс",
+      "banner.text": "Алдын ала макет: фотосуреттер, бағалар және мекенжай — көрсетілім үшін, іске қосар алдында сіздің материалдарыңызбен ауыстырамыз.",
+      "hero.eyebrow": "Форель шаруашылығы · Тараз",
+      "hero.h1": "Форель аулап, қаладан демалатын арал",
+      "hero.cta1": "WhatsApp-қа жазу",
+      "hero.cta2": "Бар мәзірін көру",
+      "trust.followers": "Instagram-да 41 000+ жазылушы",
+      "trust.noalcohol": "Алкогольсіз мекеме",
+      "trust.family": "Барлық отбасына ашық",
+      "about.eyebrow": "Аумақ",
+      "about.h2": "Аралда бір күн өткізудің төрт себебі",
+      "about.card1.title": "Форель көлі",
+      "about.card1.desc": "Таза су, тірі форель және жалға берілетін снасттар — таңнан кешке дейін балық аулаңыз.",
+      "about.card2.title": "Су жағасындағы беседкалар",
+      "about.card2.desc": "Отбасыға, достар тобына немесе жұпқа арналған жеке беседкалар — өз үстеліңізбен және көлге көрінетін таныммен.",
+      "about.card3.title": "Алкогольсіз бар",
+      "about.card3.desc": "Үй лимонадтары, шөп шайы және жеңіл тағамдар — демалыстан кейін рульге отыруға болады.",
+      "about.card4.title": "Отбасылық формат",
+      "about.card4.desc": "Түнгі мекемелердің шуылы жоқ тыныш аумақ — балаларға да, ата-аналарға да жайлы.",
+      "fishing.eyebrow": "Балық аулау",
+      "fishing.h2": "Өз форелі, әділ шарттар",
+      "fishing.intro": "Кіру мен ұстаған балық үшін төлейсіз — снасттарды жерде береміз. Төмендегі бағалар — болжамды, брондау кезінде нақтыланады.",
+      "fishing.rule1": "Өз снасттарыңызды алып келуге болады",
+      "fishing.rule2": "Ұсталған балық өлшеніп, нақты салмағы бойынша төленеді",
+      "fishing.rule3": "Күнделікті жұмыс істейміз, уақыты нақтыланады",
+      "fishing.rule4": "Топтар мен іс-шараларға жеке шарттар бар",
+      "fishing.price1.label": "Көлге кіру", "fishing.price1.value": "2 000 ₸-ден",
+      "fishing.price2.label": "Қармақ жалдау", "fishing.price2.value": "1 000 ₸-ден",
+      "fishing.price3.label": "Форель, 1 кг бағасы", "fishing.price3.value": "нақтыланады",
+      "fishing.note": "* Нақты бағалар келісілгеннен кейін осында пайда болады — қазір бұл макет үшін көрсеткіш сандар.",
+      "bar.eyebrow": "Бар және мәзір",
+      "bar.h2": "Алкогольсіз, бірақ ләззатсыз емес",
+      "bar.cat1.title": "Сусындар", "bar.cat1.item1": "Үй лимонады", "bar.cat1.item2": "Жидек морсы", "bar.cat1.item3": "Шөп шайы",
+      "bar.cat2.title": "Тағамдар", "bar.cat2.item1": "Грильде пісірілген форель", "bar.cat2.item2": "Көмірде пісірілген көкөніс", "bar.cat2.item3": "Плов",
+      "bar.cat3.title": "Десерттер", "bar.cat3.item1": "Мёд торты", "bar.cat3.item2": "Жеміс табақшасы",
+      "bar.note": "Мәзір көрсетілім үшін берілген — сіздің нақты позицияларыңызбен ауыстырамыз.",
+      "events.eyebrow": "Іс-шаралар",
+      "events.h2": "Туған күн, корпоратив немесе отбасылық жиын",
+      "events.text": "Көл жағасындағы беседкалар 10–30 адамға арналған мерекелерге қолайлы. Отырғызу, мәзір және безендірумен көмектесеміз — күнін айтыңыз, біз нұсқа таңдап береміз.",
+      "events.cta": "Іс-шараны WhatsApp-та талқылау",
+      "contact.eyebrow": "Байланыс",
+      "contact.h2": "Бізге қалай жетуге болады",
+      "contact.addr.label": "Мекенжай", "contact.addr.value": "Тараз, нақтыланады — нақты мекенжай қосылады",
+      "contact.hours.label": "Жұмыс уақыты", "contact.hours.value": "Күнделікті, нақтыланады",
+      "contact.phone.label": "WhatsApp / телефон",
+      "contact.map.btn": "2GIS-те ашу", "contact.instagram.btn": "@ostrovkema",
+      "contact.map.placeholder": "Нақты мекенжай қосылғаннан кейін осында жол картасы (2GIS / Google Maps) пайда болады",
+      "footer.text": "© 2026 Остров Кэма — Тараздағы форель шаруашылығы. Сайттың алдын ала макеті."
+    },
+    en: {
+      "brand.sub": "Trout farm · Taraz",
+      "nav.about": "About", "nav.fishing": "Fishing", "nav.bar": "Bar", "nav.events": "Events", "nav.contact": "Contact",
+      "banner.text": "Draft prototype: photos, prices and address are placeholders — we'll replace them with your materials before launch.",
+      "hero.eyebrow": "Trout Farm · Taraz",
+      "hero.h1": "An island for catching trout and forgetting the city",
+      "hero.cta1": "Message on WhatsApp",
+      "hero.cta2": "See the bar menu",
+      "trust.followers": "41,000+ Instagram followers",
+      "trust.noalcohol": "Alcohol-free venue",
+      "trust.family": "Open to the whole family",
+      "about.eyebrow": "The grounds",
+      "about.h2": "Four reasons to spend a day on the island",
+      "about.card1.title": "Trout lake",
+      "about.card1.desc": "Clean water, live trout and rental tackle — fish from morning until dusk.",
+      "about.card2.title": "Lakeside cabins",
+      "about.card2.desc": "Private cabins for family, friends or a date — your own table and a view of the water.",
+      "about.card3.title": "Alcohol-free bar",
+      "about.card3.desc": "House lemonades, herbal tea and light dishes — the kind of rest you can drive home from.",
+      "about.card4.title": "Family format",
+      "about.card4.desc": "A quiet ground with none of the noise of nightlife venues — good for kids and parents alike.",
+      "fishing.eyebrow": "Fishing",
+      "fishing.h2": "Our own trout, honest pricing",
+      "fishing.intro": "Pay for entry and for what you catch — tackle is provided on site. Prices below are indicative and confirmed at booking.",
+      "fishing.rule1": "Bringing your own tackle is allowed",
+      "fishing.rule2": "Your catch is weighed and paid for by weight",
+      "fishing.rule3": "Open daily, hours to be confirmed",
+      "fishing.rule4": "Separate terms for groups and events",
+      "fishing.price1.label": "Lake entry", "fishing.price1.value": "from ₸2,000",
+      "fishing.price2.label": "Rod rental", "fishing.price2.value": "from ₸1,000",
+      "fishing.price3.label": "Trout, price per kg", "fishing.price3.value": "to be confirmed",
+      "fishing.note": "* Final prices will appear here once agreed — these are placeholder figures for the layout.",
+      "bar.eyebrow": "Bar & menu",
+      "bar.h2": "Alcohol-free, not fun-free",
+      "bar.cat1.title": "Drinks", "bar.cat1.item1": "House lemonade", "bar.cat1.item2": "Berry mors", "bar.cat1.item3": "Herbal tea",
+      "bar.cat2.title": "Kitchen", "bar.cat2.item1": "Grilled trout", "bar.cat2.item2": "Charcoal vegetables", "bar.cat2.item3": "Plov",
+      "bar.cat3.title": "Desserts", "bar.cat3.item1": "Honey cake", "bar.cat3.item2": "Fruit plate",
+      "bar.note": "This menu is a placeholder — we'll swap in your real items and prices.",
+      "events.eyebrow": "Events",
+      "events.h2": "Birthdays, corporate days, family gatherings",
+      "events.text": "Our lakeside cabins suit celebrations of 10–30 guests. We can help with seating, menu and decoration — tell us the date and we'll find the right setup.",
+      "events.cta": "Discuss your event on WhatsApp",
+      "contact.eyebrow": "Contact",
+      "contact.h2": "How to find us",
+      "contact.addr.label": "Address", "contact.addr.value": "Taraz, to be confirmed — exact address coming soon",
+      "contact.hours.label": "Opening hours", "contact.hours.value": "Daily, to be confirmed",
+      "contact.phone.label": "WhatsApp / phone",
+      "contact.map.btn": "Open in 2GIS", "contact.instagram.btn": "@ostrovkema",
+      "contact.map.placeholder": "A map (2GIS / Google Maps) will appear here once the exact address is confirmed",
+      "footer.text": "© 2026 Ostrov Kema — trout farm in Taraz. Draft site layout."
+    }
+  };
+
+  var langAttr = { ru: "ru", kk: "kk", en: "en" };
+
+  function applyLang(lang) {
+    var dict = translations[lang] || translations.ru;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      if (dict[key] != null) el.textContent = dict[key];
+    });
+    document.documentElement.setAttribute("lang", langAttr[lang] || "ru");
+    document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-lang") === lang ? "true" : "false");
+    });
+    try { localStorage.setItem("ok_lang", lang); } catch (e) {}
+  }
+
+  document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+    btn.addEventListener("click", function () { applyLang(btn.getAttribute("data-lang")); });
+  });
+
+  var startLang = "ru";
+  try { startLang = localStorage.getItem("ok_lang") || "ru"; } catch (e) {}
+  applyLang(startLang);
+
+  /* ---------- Carousel logic ---------- */
+  var track = document.getElementById("track");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var slideIds = slides.map(function (s) { return s.getAttribute("data-slide-id"); });
+  var prevBtn = document.getElementById("prevBtn");
+  var nextBtn = document.getElementById("nextBtn");
+  var dotsWrap = document.getElementById("carDots");
+  var counter = document.getElementById("carCounter");
+  var current = 0;
+
+  slideIds.forEach(function (id, i) {
+    var dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", id);
+    dot.addEventListener("click", function () { goToSlide(i); });
+    dotsWrap.appendChild(dot);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function revealSlide(index) {
+    var els = slides[index].querySelectorAll(".reveal:not(.in-view)");
+    els.forEach(function (el) { el.classList.add("in-view"); });
+  }
+
+  function goToSlide(index) {
+    index = Math.max(0, Math.min(slides.length - 1, index));
+    current = index;
+    track.style.transform = "translateX(-" + (index * 100) + "vw)";
+    dots.forEach(function (d, i) { d.classList.toggle("active", i === index); });
+    prevBtn.disabled = index === 0;
+    nextBtn.disabled = index === slides.length - 1;
+    counter.textContent = (index + 1) + " / " + slides.length;
+    document.querySelectorAll(".nav-links a").forEach(function (a) {
+      a.classList.toggle("is-current", a.getAttribute("data-slide") === slideIds[index]);
+    });
+    slides[index].scrollTop = 0;
+    revealSlide(index);
+  }
+
+  prevBtn.addEventListener("click", function () { goToSlide(current - 1); });
+  nextBtn.addEventListener("click", function () { goToSlide(current + 1); });
+
+  document.querySelectorAll("[data-slide]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      var id = el.getAttribute("data-slide");
+      var idx = slideIds.indexOf(id);
+      if (idx > -1) goToSlide(idx);
+      panel.classList.remove("open");
+    });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = document.activeElement ? document.activeElement.tagName : "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") goToSlide(current + 1);
+    if (e.key === "ArrowLeft") goToSlide(current - 1);
+  });
+
+  /* Touch swipe */
+  var startX = 0, startY = 0, swiping = false;
+  var carouselEl = document.getElementById("carousel");
+  carouselEl.addEventListener("touchstart", function (e) {
+    if (e.target.closest(".car-arrow, .car-dots, header, .fab, .lang-switch, .nav-toggle, .mobile-panel")) {
+      swiping = false;
+      return;
+    }
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; swiping = true;
+  }, { passive: true });
+  carouselEl.addEventListener("touchmove", function (e) {
+    if (!swiping) return;
+    var dx = e.touches[0].clientX - startX;
+    var dy = e.touches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) e.preventDefault();
+  }, { passive: false });
+  carouselEl.addEventListener("touchend", function (e) {
+    if (!swiping) return;
+    swiping = false;
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
+      goToSlide(current + (dx < 0 ? 1 : -1));
+    }
+  });
+
+  /* Trackpad horizontal wheel */
+  var wheelLock = false;
+  carouselEl.addEventListener("wheel", function (e) {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 28) {
+      if (wheelLock) return;
+      wheelLock = true;
+      goToSlide(current + (e.deltaX > 0 ? 1 : -1));
+      setTimeout(function () { wheelLock = false; }, 550);
+    }
+  }, { passive: true });
+
+  /* Mobile nav */
+  var toggle = document.getElementById("navToggle");
+  var panel = document.getElementById("mobilePanel");
+  var close = document.getElementById("mobileClose");
+  function openPanel() { panel.classList.add("open"); toggle.setAttribute("aria-expanded", "true"); }
+  function closePanel() { panel.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+  toggle.addEventListener("click", openPanel);
+  close.addEventListener("click", closePanel);
+
+  goToSlide(0);
+})();
+</script>
